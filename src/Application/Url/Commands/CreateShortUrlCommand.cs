@@ -4,6 +4,7 @@ using MediatR;
 using UrlShortenerService.Application.Common.Interfaces;
 using System.Security.Cryptography;
 using System.Text;
+using System.Numerics;
 
 namespace UrlShortenerService.Application.Url.Commands;
 
@@ -19,6 +20,8 @@ public class CreateShortUrlCommandValidator : AbstractValidator<CreateShortUrlCo
         _ = RuleFor(v => v.Url)
           .NotEmpty()
           .WithMessage("Url is required.");
+
+        // TODO Url validation
     }
 }
 
@@ -37,18 +40,18 @@ public class CreateShortUrlCommandHandler : IRequestHandler<CreateShortUrlComman
     {
         using var md5Hasher = MD5.Create();
         var md5hash = md5Hasher.ComputeHash(Encoding.UTF8.GetBytes(request.Url));
-        var uniqueId = BitConverter.ToInt32(md5hash, 0);
 
         var url = new Domain.Entities.Url
         {
-            UniqueId = uniqueId,
+            Hash = md5hash,
             OriginalUrl = request.Url
         };
 
         _ = await _context.Urls.AddAsync(url, cancellationToken);
         _ = await _context.SaveChangesAsync(cancellationToken);
 
-        var encodedUrl = _hashids.EncodeLong(url.UniqueId);
+        var uniqueId = Convert.ToHexString(md5hash);
+        var encodedUrl = _hashids.EncodeHex(uniqueId);
         return encodedUrl;
     }
 }

@@ -18,7 +18,7 @@ public class Url : BaseAuditableEntity
 
     #region properties
 
-    public long UniqueId { get; set; } = default!;
+    public byte[] Hash { get; set; } = default!;
 
     /// <summary>
     /// The original url.
