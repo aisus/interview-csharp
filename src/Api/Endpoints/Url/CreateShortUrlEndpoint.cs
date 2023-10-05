@@ -41,6 +41,6 @@ public class CreateShortUrlEndpoint : BaseEndpoint<CreateShortUrlRequest>
             },
             ct
         );
-        await SendOkAsync(result);
+        await SendOkAsync($"{BaseURL}u/{result}");
     }
 }
