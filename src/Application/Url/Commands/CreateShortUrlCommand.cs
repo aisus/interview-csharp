@@ -5,6 +5,7 @@ using UrlShortenerService.Application.Common.Interfaces;
 using System.Security.Cryptography;
 using System.Text;
 using System.Numerics;
+using Microsoft.EntityFrameworkCore;
 
 namespace UrlShortenerService.Application.Url.Commands;
 
@@ -39,19 +40,20 @@ public class CreateShortUrlCommandHandler : IRequestHandler<CreateShortUrlComman
     public async Task<string> Handle(CreateShortUrlCommand request, CancellationToken cancellationToken)
     {
         using var md5Hasher = MD5.Create();
-        var md5hash = md5Hasher.ComputeHash(Encoding.UTF8.GetBytes(request.Url));
 
         var url = new Domain.Entities.Url
         {
-            Hash = md5hash,
+            Hash = md5Hasher.ComputeHash(Encoding.UTF8.GetBytes(request.Url)),
             OriginalUrl = request.Url
         };
 
-        _ = await _context.Urls.AddAsync(url, cancellationToken);
-        _ = await _context.SaveChangesAsync(cancellationToken);
+        if (!await _context.Urls.AnyAsync(x => x.Hash == url.Hash))
+        {
+            _ = await _context.Urls.AddAsync(url, cancellationToken);
+            _ = await _context.SaveChangesAsync(cancellationToken);
+        }
 
-        var uniqueId = Convert.ToHexString(md5hash);
-        var encodedUrl = _hashids.EncodeHex(uniqueId);
-        return encodedUrl;
+        var uniqueId = Convert.ToHexString(url.Hash);
+        return _hashids.EncodeHex(uniqueId);
     }
 }
